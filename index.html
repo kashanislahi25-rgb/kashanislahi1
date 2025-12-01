@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kashan Recipe Finder</title>
+
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+
+  <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: "Poppins", sans-serif; background-color: #f8f9fa; color: #333; scroll-behavior: smooth; }
+
+    
+    .navbar { background-color: #111; color: white; transition: background-color 0.4s ease; }
+    .navbar.scrolled { background-color: rgba(0,0,0,0.85); }
+    .nav-link { color: white; font-weight: 500; }
+    .nav-link:hover { color: #ffcc00; }
+
+    .main { border-radius: 20px; border: 1px solid white; font-size: 16px; padding: 10px; background: transparent; color: white; transition: all 0.3s ease; }
+    .main:hover { background-color: white; color: black; transform: scale(1.05); }
+    .main a { text-decoration: none; color: inherit; }
+
+    
+    #hero { position: relative; height: 60vh; overflow: hidden; display:flex; align-items:center; }
+    #hero .hero-bg { position:absolute; inset:0; background-image: url('https://images.unsplash.com/photo-1504674900247-0877df9cc836'); background-size:cover; background-position:center; filter:brightness(55%); }
+    #hero .hero-content { position: relative; z-index:2; width:100%; text-align:center; color:white; padding: 0 15px; }
+    #hero h1 { font-size: 2.6rem; font-weight:700; margin-bottom:10px; }
+    #hero p { font-size:1.05rem; margin-bottom:18px; }
+
+    .btn-cta { background-color:#ffcc00; color:#333; border:none; padding:12px 26px; border-radius:30px; font-weight:600; }
+    .btn-cta:hover { transform:scale(1.03); }
+
+    
+    .search-panel { margin-top:-40px; position:relative; z-index:3; }
+    .search-box { background:white; border-radius:14px; padding:18px; box-shadow:0 10px 30px rgba(0,0,0,0.08); }
+
+    
+    .recipes { padding:60px 0; }
+    .card { border:none; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+    .card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(0,0,0,0.12); }
+    .card img { height: 220px; object-fit: cover; border-radius:6px; }
+
+    .filter-btn {
+      border: 1px solid #007bff; background: white; color: #007bff;
+      padding: 8px 18px; border-radius: 25px; margin: 5px; cursor:pointer; font-weight:500;
+    }
+    .filter-btn:hover, .filter-btn.active { background: #007bff; color:white; }
+
+    .recipe-card.hide { opacity:0; transform: scale(0.95); pointer-events:none; position:absolute; }
+
+   
+    .modal-body img { max-height: 360px; object-fit: cover; width: 100%; border-radius:6px; }
+
+   
+    #backToTop { position: fixed; bottom: 30px; right: 30px; z-index: 999; background-color: #007bff; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.4s ease; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    #backToTop.show { opacity: 1; visibility: visible; }
+    footer { background-color: #212529; color: white; text-align:center; padding:18px 0; margin-top:40px; }
+
+    @media (max-width:768px){
+      #hero h1{font-size:1.6rem}
+      #hero p{font-size:.95rem}
+    }
+  </style>
+</head>
+<body>
+
+ 
+  <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">Kashan Recipes</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarScroll">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarScroll">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link active" href="#hero">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="#recipes">Recipes</a></li>
+          <li class="nav-item"><a class="nav-link" href="#submit">Submit</a></li>
+          <button class="main ms-3"><a href="#recipes">Browse Recipes</a></button>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  
+  <section id="hero">
+    <div class="hero-bg"></div>
+    <div class="container hero-content">
+      <h1 data-aos="fade-up">Find delicious recipes in seconds</h1>
+      <p data-aos="fade-up" data-aos-delay="120">Search by ingredient, meal name or filter by category. Try "chicken", "pasta" or "dessert".</p>
+
+      <div class="container search-panel" data-aos="zoom-in" data-aos-delay="220">
+        <div class="row justify-content-center">
+          <div class="col-lg-9 search-box">
+            <div class="row g-2">
+              <div class="col-md-6">
+                <input id="searchInput" type="text" class="form-control" placeholder="Search recipes (e.g., chicken, pasta, curry)"/>
+              </div>
+              <div class="col-md-3">
+                <select id="areaSelect" class="form-control">
+                  <option value="">Any Cuisine</option>
+                  <option>Italian</option>
+                  <option>Indian</option>
+                  <option>Chinese</option>
+                  <option>Mexican</option>
+                  <option>Japanese</option>
+                </select>
+              </div>
+              <div class="col-md-3 d-grid">
+                <button id="searchBtn" class="btn btn-primary">Search Recipes</button>
+              </div>
+            </div>
+            <div class="mt-3 text-muted small">Tip: leave search blank and click "Search" to fetch popular recipes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  
+  <section id="recipes" class="recipes">
+    <div class="container">
+      <h2 class="mb-3" data-aos="fade-up">Popular Recipes</h2>
+
+      
+      <div class="mb-4" data-aos="fade-up">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="Breakfast">Breakfast</button>
+        <button class="filter-btn" data-filter="Main">Main</button>
+        <button class="filter-btn" data-filter="Dessert">Dessert</button>
+        <button class="filter-btn" data-filter="Snack">Snack</button>
+      </div>
+
+      <div class="row g-4" id="recipeCards">
+      
+        <div class="col-md-4 recipe-card" data-category="Main" data-aos="fade-up">
+          <div class="card shadow-sm">
+            <img src="https://supervalu.ie/image/var/files/real-food/recipes/Uploaded-2020/spaghetti-bolognese-recipe.jpg" class="card-img-top" alt="Spaghetti Bolognese">
+            <div class="card-body text-center">
+              <h5 class="card-title">Spaghetti Bolognese</h5>
+              <p class="text-muted small">Classic Italian beef ragu with pasta.</p>
+              <button class="btn btn-outline-primary view-btn">View Recipe</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 recipe-card" data-category="Dessert" data-aos="fade-up">
+          <div class="card shadow-sm">
+            <img src="https://img.taste.com.au/kdMbjArS/taste/2010/01/chocolate-brownies-118925-2.jpg" class="card-img-top" alt="Chocolate Brownie">
+            <div class="card-body text-center">
+              <h5 class="card-title">Chocolate Brownies</h5>
+              <p class="text-muted small">Fudgy, gooey, and irresistibly chocolatey.</p>
+              <button class="btn btn-outline-primary view-btn" data-recipe='{"title":"Chocolate Brownies","image":"https://images.unsplash.com/photo-1542444459-db5f63a1b6b8","instructions":"1. Preheat oven to 180°C.\n2. Mix sugar, butter, eggs, cocoa, flour.\n3. Pour into pan and bake 20-25 mins.","ingredients":["1 cup sugar","1/2 cup butter","2 eggs","1/2 cup flour","1/2 cup cocoa"]}'>View Recipe</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-4 recipe-card" data-category="Breakfast" data-aos="fade-up">
+          <div class="card shadow-sm">
+            <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836" class="card-img-top" alt="Pancakes">
+            <div class="card-body text-center">
+              <h5 class="card-title">Fluffy Pancakes</h5>
+              <p class="text-muted small">Perfect weekend breakfast pancakes.</p>
+              <button class="btn btn-outline-primary view-btn" data-recipe='{"title":"Fluffy Pancakes","image":"https://images.unsplash.com/photo-1504674900247-0877df9cc836","instructions":"1. Mix flour, milk, egg, baking powder.\n2. Fry on skillet until golden.","ingredients":["1 cup flour","1 cup milk","1 egg","1 tsp baking powder"]}'>View Recipe</button>
+            </div>
+          </div>
+        </div>
+
+        
+      </div>
+    </div>
+  </section>
+
+ 
+  <section id="submit">
+    <div class="container">
+      <div class="booking-container" data-aos="fade-up" style="max-width:720px; margin:auto; background:white; border-radius:12px; padding:28px;">
+        <h3 class="mb-3">Submit Your Recipe</h3>
+        <form id="submitForm">
+          <div class="mb-2">
+            <input type="text" id="recipeName" class="form-control" placeholder="Recipe Name" required>
+          </div>
+          <div class="mb-2">
+            <input type="text" id="recipeImage" class="form-control" placeholder="Image URL (optional)">
+          </div>
+          <div class="mb-2">
+            <textarea id="recipeIngredients" class="form-control" rows="3" placeholder="Ingredients (comma-separated)" required></textarea>
+          </div>
+          <div class="mb-2">
+            <textarea id="recipeInstructions" class="form-control" rows="4" placeholder="Instructions" required></textarea>
+          </div>
+          <div class="d-grid mt-2">
+            <button class="btn btn-primary" type="submit">Submit Recipe (Adds to list)</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  
+  <div class="modal fade" id="recipeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="modalTitle">Recipe</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <img id="modalImage" src="" alt="">
+          <h4 id="modalSubtitle" class="mt-3"></h4>
+          <h6>Ingredients</h6>
+          <ul id="modalIngredients"></ul>
+          <h6>Instructions</h6>
+          <p id="modalInstructions" class="text-muted"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+          <a id="sourceBtn" class="btn btn-primary" target="_blank" href="#">Open Source</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+ 
+  <button id="backToTop" title="Go to top">↑</button>
+
+  <footer>&copy; 2025 Kashan Recipes | Built with ❤️</footer>
+
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+
+  <script>
+    AOS.init({ duration: 900, once: true });
+
+    
+    window.addEventListener("scroll", () => {
+      const nav = document.querySelector(".navbar");
+      if (window.scrollY > 50) nav.classList.add("scrolled");
+      else nav.classList.remove("scrolled");
+    });
+
+    
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute("href"));
+        if (target) {
+          window.scrollTo({ top: target.offsetTop - 70, behavior: "smooth" });
+        }
+      });
+    });
+
+   
+    const backToTop = document.getElementById("backToTop");
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 300) backToTop.classList.add("show");
+      else backToTop.classList.remove("show");
+    });
+    backToTop.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+
+    
+    const filterBtns = document.querySelectorAll(".filter-btn");
+    const recipeContainer = document.getElementById("recipeCards");
+
+    filterBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        filterBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const value = btn.getAttribute("data-filter");
+
+        document.querySelectorAll(".recipe-card").forEach(card => {
+          const cats = card.getAttribute("data-category") || "";
+          if (value === "all" || cats.includes(value)) card.classList.remove("hide");
+          else card.classList.add("hide");
+        });
+      });
+    });
+
+   
+    const recipeModalEl = document.getElementById('recipeModal');
+    const recipeModal = new bootstrap.Modal(recipeModalEl);
+
+    function openRecipeModal({ title, image, ingredients = [], instructions = "", source = "#" }) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalImage').src = image || "https://via.placeholder.com/800x450?text=No+Image";
+      document.getElementById('modalSubtitle').innerText = '';
+      const ingrList = document.getElementById('modalIngredients');
+      ingrList.innerHTML = "";
+      ingredients.forEach(i => {
+        const li = document.createElement('li'); li.innerText = i; ingrList.appendChild(li);
+      });
+      document.getElementById('modalInstructions').innerText = instructions || "No instructions provided.";
+      document.getElementById('sourceBtn').href = source;
+      recipeModal.show();
+    }
+
+    
+    function attachViewButtons() {
+      document.querySelectorAll(".view-btn").forEach(btn => {
+        if (btn._attached) return; // avoid double attach
+        btn._attached = true;
+        btn.addEventListener("click", (e) => {
+          const card = btn.closest(".recipe-card");
+          
+          const dataAttr = btn.getAttribute('data-recipe');
+          if (dataAttr) {
+            try {
+              const data = JSON.parse(dataAttr);
+              openRecipeModal({ title: data.title, image: data.image, ingredients: data.ingredients || [], instructions: data.instructions || "" });
+              return;
+            } catch (err) {}
+          }
+          
+          const title = card.querySelector(".card-title").innerText;
+          const img = card.querySelector("img").src;
+          const desc = card.querySelector(".card-body .text-muted")?.innerText || "";
+          openRecipeModal({ title, image: img, ingredients: [desc], instructions: "Instructions not available for this offline recipe." });
+        });
+      });
+    }
+    attachViewButtons();
+
+ 
+    const searchBtn = document.getElementById('searchBtn');
+    const searchInput = document.getElementById('searchInput');
+
+    async function searchMeals(query = "") {
+      
+      const q = (query || 'a').trim();
+      try {
+        const res = await fetch(`https://www.themealdb.com/api/json/v1/1/search.php?s=${encodeURIComponent(q)}`);
+        const data = await res.json();
+        return data.meals || [];
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    }
+
+    async function lookupMeal(id) {
+      try {
+        const res = await fetch(`https://www.themealdb.com/api/json/v1/1/lookup.php?i=${id}`);
+        const data = await res.json();
+        return data.meals && data.meals[0] ? data.meals[0] : null;
+      } catch (err) {
+        console.error(err);
+        return null;
+      }
+    }
+
+    function parseMealToModal(meal) {
+      if (!meal) return null;
+      const ingredients = [];
+      for (let i = 1; i <= 20; i++) {
+        const ing = meal[`strIngredient${i}`];
+        const qty = meal[`strMeasure${i}`];
+        if (ing && ing.trim()) ingredients.push(`${qty ? qty.trim() + " " : ""}${ing.trim()}`);
+      }
+      const instructions = meal.strInstructions || "";
+      return {
+        title: meal.strMeal,
+        image: meal.strMealThumb,
+        ingredients,
+        instructions,
+        source: meal.strSource || meal.strYoutube || "#"
+      };
+    }
+
+    async function renderSearchResults(query) {
+    
+      document.querySelectorAll('.recipe-card[data-dynamic="true"]').forEach(n => n.remove());
+
+      const meals = await searchMeals(query);
+      if (!meals || meals.length === 0) {
+
+        const noCard = document.createElement('div');
+        noCard.className = 'col-12 recipe-card';
+        noCard.setAttribute('data-dynamic', 'true');
+        noCard.innerHTML = `<div class="card p-4 text-center"><div class="card-body">No recipes found for "<strong>${query}</strong>". Try another search.</div></div>`;
+        recipeContainer.appendChild(noCard);
+        return;
+      }
+
+      meals.slice(0, 12).forEach(meal => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 recipe-card';
+        col.setAttribute('data-dynamic', 'true');
+        col.setAttribute('data-category', 'Main'); 
+        col.setAttribute('data-aos', 'fade-up');
+
+        const html = `
+          <div class="card shadow-sm">
+            <img src="${meal.strMealThumb}" class="card-img-top" alt="${meal.strMeal}">
+            <div class="card-body text-center">
+              <h5 class="card-title">${meal.strMeal}</h5>
+              <p class="text-muted small">${(meal.strCategory||'').slice(0,60)}</p>
+              <button class="btn btn-outline-primary api-view" data-id="${meal.idMeal}">View Recipe</button>
+            </div>
+          </div>
+        `;
+        col.innerHTML = html;
+        recipeContainer.appendChild(col);
+      });
+
+      
+      document.querySelectorAll('.api-view').forEach(btn => {
+        if (btn._attached) return;
+        btn._attached = true;
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const meal = await lookupMeal(id);
+          const parsed = parseMealToModal(meal);
+          if (parsed) openRecipeModal(parsed);
+        });
+      });
+
+      AOS.refresh(); 
+    }
+
+
+    window.addEventListener('load', () => {
+      renderSearchResults('chicken');
+    });
+
+    searchBtn.addEventListener('click', () => {
+      const q = searchInput.value.trim();
+      renderSearchResults(q);
+    });
+
+   
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        searchBtn.click();
+      }
+    });
+
+    
+    const submitForm = document.getElementById('submitForm');
+    submitForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = document.getElementById('recipeName').value.trim();
+      const image = document.getElementById('recipeImage').value.trim() || 'https://via.placeholder.com/800x450?text=Recipe';
+      const ingredientsRaw = document.getElementById('recipeIngredients').value.trim();
+      const instructions = document.getElementById('recipeInstructions').value.trim();
+
+      const ingredients = ingredientsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+      const col = document.createElement('div');
+      col.className = 'col-md-4 recipe-card';
+      col.setAttribute('data-category', 'Main');
+      col.setAttribute('data-aos', 'fade-up');
+      const html = `
+        <div class="card shadow-sm">
+          <img src="${image}" class="card-img-top" alt="${name}">
+          <div class="card-body text-center">
+            <h5 class="card-title">${name}</h5>
+            <p class="text-muted small">User submitted</p>
+            <button class="btn btn-outline-primary view-btn-local">View Recipe</button>
+          </div>
+        </div>
+      `;
+      col.innerHTML = html;
+      recipeContainer.appendChild(col);
+
+     
+      col.querySelector('.view-btn-local').addEventListener('click', () => {
+        openRecipeModal({ title: name, image, ingredients, instructions });
+      });
+
+      
+      submitForm.reset();
+      col.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+
+   
+    const observer = new MutationObserver(() => attachViewButtons());
+    observer.observe(recipeContainer, { childList: true, subtree: true });
+
+  </script>
+</body>
+</html>
